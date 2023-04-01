@@ -246,6 +246,9 @@ class Ball(pygame.sprite.Sprite):
         self.radius = int(self.rect.width * 0.9 / 2)  # for hit judgment
         # pygame.draw.circle(self.image, RED, self.rect.center, self.radius)  # see the circle
 
+        self.hitted = False
+        self.is_on_floor = False
+        self.not_judged = True
         self.rect.centerx = WIDTH / 4
         self.rect.centery = -20
         self.speedy = random.randrange(7, 10)
@@ -271,6 +274,9 @@ class Ball(pygame.sprite.Sprite):
         if self.rect.top > HEIGHT + 60 or self.rect.bottom < -60 or self.rect.left > WIDTH or self.rect.right < 0:
             self.kill()
             new_ball()
+
+        if self.rect.centery > HEIGHT - 10:
+            self.is_on_floor = True
             
 # loop music
 # pygame.mixer.music.play(-1)
@@ -311,25 +317,30 @@ while running:
     foreground.update()
 
     for ball in balls:
-        # player miss the ball
-        if not pygame.sprite.collide_circle(player, ball):
-            if HEIGHT - 30 > ball.rect.centery > HEIGHT - 40:
+        if pygame.sprite.collide_circle(player, ball):
+            ball.hitted = True
+            
+        if ball.not_judged:
+            if ball.hitted:
+                score += 1
+                random.choice(bounce_sounds).play()
+                ball.speedy *= -1
+                if player.rect.centerx < WIDTH / 2:
+                    ball.speedx = random.randrange(1, 6)
+                else:
+                    ball.speedx = random.randrange(-8, 2)
+                ball.not_judged = False
+
+            # player miss the ball
+            if ball.is_on_floor:
                 if BORDER <= ball.rect.centerx <= WIDTH - BORDER:
-                    score -= 1
                     player.lifes -= 1
                     if player.lifes == 0:
                         show_init = True
                 else:
                     score += 1
-        else:
-            score += 1
-            random.choice(bounce_sounds).play()
-            ball.speedy *= -1
-            ball.radius = 0  # to avoid judging again
-            if player.rect.centerx < WIDTH / 2:
-                ball.speedx = random.randrange(1, 6)
-            else:
-                ball.speedx = random.randrange(-8, 2)
+                ball.not_judged = False
+            
     
     # display
     # screen.fill(BLACK)
